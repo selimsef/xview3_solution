@@ -14,6 +14,9 @@ RUN apt install wget mc -y
 # Setting the working directory
 WORKDIR /workspace
 
+RUN mkdir -p logs
+RUN mkdir -p weights
+
 RUN wget -O weights/val_only_TimmUnet_nfnet_l0_99_xview https://github.com/selimsef/xview3_solution/releases/download/weights/val_only_TimmUnet_nfnet_l0_99_xview
 RUN wget -O weights/val_only_TimmUnet_tf_efficientnetv2_l_in21k_99_last https://github.com/selimsef/xview3_solution/releases/download/weights/val_only_TimmUnet_tf_efficientnetv2_l_in21k_99_last
 RUN wget -O weights/val_only_TimmUnet_tf_efficientnetv2_l_in21k_77_xview https://github.com/selimsef/xview3_solution/releases/download/weights/val_only_TimmUnet_tf_efficientnetv2_l_in21k_77_xview
