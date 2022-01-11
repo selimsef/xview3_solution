@@ -9,6 +9,8 @@ ENV CMAKE_PREFIX_PATH="$(dirname $(which conda))/../"
 ENV PYTHONPATH=.
 
 RUN pip install albumentations==1.0.0 timm==0.4.12 tensorboardx pandas madgrad
+RUN apt update
+RUN apt install wget mc -y
 # Setting the working directory
 WORKDIR /workspace
 
