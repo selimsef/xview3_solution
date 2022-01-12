@@ -28,6 +28,8 @@ RUN wget -O weights/val_only_TimmUnet_resnet34_77_xview https://github.com/selim
 COPY . /workspace
 
 RUN chmod 777 run_inference.sh
+RUN chmod 777 train.sh
+RUN chmod 777 train_all.sh
 
 ENTRYPOINT [ "/workspace/run_inference.sh" ]
 
