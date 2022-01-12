@@ -26,7 +26,7 @@ docker build -t xview3 .
 
 ### Training
 
-For training I used an instance 4xRTX A6000. For GPUs with smaller VRAM you will need to reduce crop sizes in configurations.
+For training I used an instance with 4xRTX A6000. For GPUs with smaller VRAM you will need to reduce crop sizes in configurations.
 As I did not make small tiles of large tiff and used memmap instead, fast disks like M.2 (ideally in raid0) should be used.
 
 To reproduce training from scratch: 
