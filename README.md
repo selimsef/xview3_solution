@@ -27,7 +27,14 @@ docker build -t xview3 .
 ### Training
 
 For training I used an instance 4xRTX A6000. For GPUs with smaller VRAM you will need to reduce crop sizes in configurations.
+As I did not make small tiles of large tiff and used memmap instead fast disks like M.2 (ideally in raid0) should be used.
 
+To reproduce training from scratch: 
+1. build docker image as described above
+2. run docker image with modified entrypoint, e.g. `docker run --rm --network=host --entrypoint /bin/bash --gpus all --ipc host -v /mnt:/mnt -it xview3:latest`
+3. run `./train_all.sh NUM_GPUS DATA_DIR SHORE_DIR VAL_OUT_DIR`, where `DATA_DIR` is the root directory with the dataset, `SHORE_DIR` path to shoreline data for validation set,   `VAL_OUT_DIR` any path where csv prediction will be stored on evaluation phase after each epoch
+4. example `./train_all.sh 4 /mnt/md0/datasets/xview3/ /mnt/md0/datasets/xview3/shoreline/validation /mnt/md0/datasets/xview3/oof/`
+5. it will overwrite existing weights under `weights` directory in container 
 
 
 ### Solution approach
