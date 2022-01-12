@@ -27,7 +27,7 @@ docker build -t xview3 .
 ### Training
 
 For training I used an instance 4xRTX A6000. For GPUs with smaller VRAM you will need to reduce crop sizes in configurations.
-As I did not make small tiles of large tiff and used memmap instead fast disks like M.2 (ideally in raid0) should be used.
+As I did not make small tiles of large tiff and used memmap instead, fast disks like M.2 (ideally in raid0) should be used.
 
 To reproduce training from scratch: 
 1. build docker image as described above
@@ -36,8 +36,11 @@ To reproduce training from scratch:
 4. example `./train_all.sh 4 /mnt/md0/datasets/xview3/ /mnt/md0/datasets/xview3/shoreline/validation /mnt/md0/datasets/xview3/oof/`
 5. it will overwrite existing weights under `weights` directory in container 
 
+#### Training time
 
-### Solution approach
+As I used full resolution segmentation it was quite slow, 9-15 hours per model on 4 gpus. 
+
+### Solution approach overview
 
 Maritime object detection can be transformed to a binary segmentation and regressing problem using UNet like convolutional neural networks with the multiple outputs.
 
@@ -79,5 +82,48 @@ Length mask - round objects with fixed radius and pixel values were set to lengt
 Missing length was ignored in the loss function.
 As a loss function for length at first I used MSE but then change to the loss function that directly reflected the metric.
 I.e.`length_loss = abs(target - predicted_value)/target`
+
+### Training procedure 
+#### Data
+I tried to use train data split but annotation quality is not good enough and even pretraining on full train set and the finetuning on validation data was not better than simply using only validation data.
+In the end I used pure validation data with small holdout sets for evaluation.
+In general there was a data leak between val/train/test splits and I tried to use clean non overlapping validation which did not help and did not represent public scores well.  
+![Data Leak](images/leak.png)
+
+#### Optimization
+Usually AdamW converges faster and provides better metrics for binary segmentation problems but it is prone to unstable training in mixed precision mode (NaNs/Infs in loss values).
+That's why as an optimizer I used SGD with the following parameters:
+* initial learning rate 0.003
+* cosine LR decay
+* weight decay 1e-4
+* nesterov momentum
+* momentum=0.9
+
+For each model there were around 20-30k iterations.
+As I used SyncBN and 4 GPUs batch size=2 was good enough and I used larger crops instead of large batch size. 
+
+#### Inference
+
+I used overlap inference with slices of size 3584x3584 and overlap 704 pixels. To reduce memory footprint predictions were transformed to uint8 and float16 data type before prostprocessing. See `inference/run_inference.py` for details.
+
+#### Postprocessing
+After center, vessel, fishing, length pixel masks are predicted they need to be transformed to detections in CSV format.
+From center gaussians I just used tresholding and found connected components. Each component is considered as a detected object. 
+I used centroids of objects to obtain mean values for vessel/fishing/lengths from the respective masks.
+
+#### Data augmentations
+
+I only used random crops and random rotate 180. Ideally SAR orientation should be provided with the data (as in Spacenet 6 challenge) because SAR artifacts depend on Satellite direction. 
+
+### Data acquisition, processing, and manipulation
+
+Input
+- 2 SAR channels (VV, VH)
+- custom normalization `(Intensity + 40)/15`
+- missing pixel values changed to -100 before normalization
+
+Spatial resolution of the supplementary data is very low and doesn't bring any value to the models.
+
+During training and inference I used `tifffile.memmap` and cropped data from memory mapped file in order to avoid tile splitting.
 
 
